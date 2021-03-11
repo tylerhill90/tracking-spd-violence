@@ -1,0 +1,140 @@
+---
+title: "Data Wrangling"
+author: "Tyler Hill"
+date: "3/8/2021"
+output: html_document
+---
+
+***
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/home/tyler/School/INSH5302/MyCity")
+```
+
+```{r, warning=F, message=F}
+# Load the necessary libraries
+library(tidyverse)
+library(lubridate)
+library(sf)
+```
+
+## The Data
+
+The data I am using comes from the [City of Seattle's Open Data Program](https://data.seattle.gov/). I am using the following three data sets concerning the Seattle Police Department (SPD).
+
+- [Terry Stops](https://data.seattle.gov/Public-Safety/Terry-Stops/28ny-9ts8)
+- [Use of Force](https://data.seattle.gov/Public-Safety/Use-Of-Force/ppi5-g2bj)
+- [SPD Officer Involved Shooting (OIS) Data](https://data.seattle.gov/Public-Safety/SPD-Officer-Involved-Shooting-OIS-Data/mg5r-efcm)
+
+I will be using the shape files from [this data set](https://data.seattle.gov/dataset/Seattle-Police-Beats-2018-Present/ex83-w2uk) of Seattle Police Beats, 2018 to the present.
+
+The data is in csv format. I will load in the individual files and clean them to meet my needs. Note, I am only keeping data from 2018 to the present as SPD changes their beats every few years and I only want to have to handle one shape file for this analysis. I feel like this still constitutes a meaningful time range to see recent trends.
+
+### Terry Stops
+
+```{r, warning=F, message=F}
+terry_df <- read.csv("Data/Terry_Stops.csv")
+#View(terry_df)
+
+terry_df <- terry_df %>% 
+  select( # No need for these columns for my analysis
+    -c(GO...SC.Num, Initial.Call.Type, Officer.Squad, Call.Type, Sector)
+    ) %>% 
+  mutate( # General cleaning of data for better analysis
+    Beat = trimws(ifelse(Beat == "-", NA, Beat)),
+    Subject.Age.Group = ifelse(Subject.Age.Group == "-", "Unknown", Subject.Age.Group),
+    Weapon.Type = ifelse(Weapon.Type == "-", "Unknown", Weapon.Type),
+    Final.Call.Type = ifelse(Final.Call.Type == "-", "Unknown", Final.Call.Type),
+    Subject.Perceived.Race = ifelse(Subject.Perceived.Race == "-", "Unknown", Subject.Perceived.Race),
+    Subject.Perceived.Gender = ifelse(Subject.Perceived.Gender == "-", "Unknown", Subject.Perceived.Gender),
+    Frisk.Flag = ifelse(Frisk.Flag == "-", "Unknown", Frisk.Flag),
+    Precinct = ifelse(Precinct == "-", "Unknown", Precinct),
+    Final.Call.Type = gsub("--", "", Final.Call.Type),
+    Reported.Date = as_date(Reported.Date),
+    Reported.Time =  as.integer(substr(Reported.Time, 1, 2)), # Keep only the hour as an int
+    Reported.Date =  as.integer(substr(Reported.Date, 1, 4)), # Keep only the year as an int
+    Officer.ID = as.integer(Officer.ID)
+  ) %>% 
+  drop_na(Beat) %>% 
+  rename(
+    Year = Reported.Date,
+    Time = Reported.Time
+  ) %>% 
+  filter(Year > 2017) # Only keep observations after 2017
+
+str(terry_df)
+```
+
+### Use of Force
+
+Website for defining SPD's use of force levels [here](http://www.seattle.gov/police-manual/title-8---use-of-force/8050---use-of-force-definitions).
+
+```{r, warning=F, message=F}
+force_df <- read.csv("Data/Use_Of_Force.csv")
+#View(force_df)
+
+force_df <- force_df %>% 
+  select(
+    -c(ID, Incident_Num, Sector)
+    ) %>% 
+  mutate(
+    OIS = ifelse(str_detect(Incident_Type, "OIS"), 1, 0), # Shooting involved
+    Incident_Type = as.integer(substr(Incident_Type, 7, 7)),
+    Time = as.integer(substr(Occured_date_time, 12, 13)),
+    Occured_date_time = as.integer(substr(Occured_date_time, 7, 10)),
+    Beat = ifelse(Beat == "-", NA, Beat)
+  ) %>% 
+  drop_na(Beat) %>% 
+  rename(Year = Occured_date_time) %>% 
+  filter(Year > 2017) # Only keep observations after 2017
+
+str(force_df)
+```
+
+### SPD Officer Involved Shooting 
+
+```{r, warning=F, message=F}
+shoot_df <- read.csv("Data/SPD_Officer_Involved_Shooting__OIS__Data.csv")
+#View(shoot_df)
+
+shoot_df <- shoot_df %>% 
+  filter(City == "Seattle") %>% # Keep only Seattle data
+  select(
+    -c(FRB.., Incident.Number, Blurred.Address, City, State, Disposition, Summary)
+    ) %>% 
+  rename(Date = Date...Time) %>% 
+  mutate(
+    Time = as.integer(substr(Date, 12, 13)),
+    Date = as.integer(substr(Date, 7, 10)),
+    Type.of.Weapon = ifelse(Type.of.Weapon %in% c("", "N/A"), "Uknown/None", Type.of.Weapon),
+    Years.of.SPD.Service = as.integer(Years.of.SPD.Service),
+    Subject.Age = as.integer(Subject.Age),
+    Subject.Age = ifelse(Subject.Age > 100, -1, Subject.Age), # Data for subjects >100 age is prob wrong
+    Subject.DOB = as_date(Subject.DOB)
+  ) %>%
+  rename(Year = Date) %>% 
+  filter(Year > 2017) # Only keep observations after 2017
+
+str(shoot_df)
+```
+
+## SPD Beat Shape Files
+
+I will next wrangle my shape files for visualizing the data.
+
+```{r}
+beats <- st_read("./Data/Beats/SPD_Beats_WGS84.shp")
+
+st_geometry(beats)
+
+plot(beats)
+```
+
+From the output above it looks like the bounding box is in long/lat which is what we'll need for our shootings data.
+
+```{r}
+# Save workspace 
+save.image(file='data.RData')
+```
+
