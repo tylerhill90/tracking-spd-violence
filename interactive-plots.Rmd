@@ -19,6 +19,7 @@ library(leaflet)
 library(sf)
 library(htmltools)
 library(tigris)
+library(highcharter)
 
 # Load in the data
 data_f <- file.path(".", "data.RData")
@@ -34,11 +35,15 @@ I will work with data only from 2018 just to get the map working. I will filter 
 terry_2018 <- terry_df %>% 
   filter(Year == 2018)
 
+# Number of Terry Stops
+nrow(terry_2018)
+
+# Df of total terry stops that year per beat
 beat_stops <- terry_2018 %>% 
   group_by(Beat) %>% 
   summarise(total_stops = n())
 
-# Add missing beats data to beats_stops
+# Add missing beats data to beat_stops
 dif_beats <- setdiff(beats$beat, beat_stops$Beat)
 for (b in dif_beats) {
   beat_stops <- beat_stops %>% 
@@ -70,7 +75,7 @@ terry_map <- leaflet(options = leafletOptions(minZoom = 10)) %>%
               highlight = highlightOptions(
                 weight = 3,
                 color = "#666",
-                fillOpacity = 0.6,
+                fillOpacity = 0.7,
                 bringToFront = TRUE)) %>%
   addLegend(pal = pal,
             values = beats$total_stops,
@@ -83,3 +88,110 @@ terry_map <- leaflet(options = leafletOptions(minZoom = 10)) %>%
 terry_map
 ```
 
+The above chloropleth shows the total number of Terry stops in each beat for the year of 2018 by hovering over the beat in question. It also quickly shows relative frequency between the beats visually as per the legend.
+
+Next I will make summarizing visualizations to display next to the map. These will summarize the data for all the beats combined. Hopefully, I will be able to subset the data per beat in the shiny app when the user clicks on a beat in the map above.
+
+```{r}
+# Age of subject
+sub_age_chart <- terry_2018 %>% 
+  group_by(Subject.Age.Group, Subject.Perceived.Gender) %>% 
+  summarise(age_count = n()) %>%
+  hchart(
+    "column", hcaes(
+      x = Subject.Age.Group,
+      y = age_count,
+      group = Subject.Perceived.Gender),
+    stacking = "normal"
+  ) %>% 
+  hc_xAxis(title = list(text = "Subject Age")) %>% 
+  hc_yAxis(title = list(text = "Frequency")) %>% 
+  hc_title(text = "Subject Age Distribution")
+sub_age_chart
+```
+
+It looks like the 26 to 35 age group is by far targeted most often for Terry Stops.
+
+Next I will look at a pie chart of subject race.
+
+```{r}
+sub_race_pie <- terry_2018 %>% 
+  group_by(Subject.Perceived.Race) %>% 
+  summarise(count = n()) %>%
+  hchart(
+    "pie", hcaes(x = Subject.Perceived.Race, y = count),
+    name = "Frequency"
+  ) %>% 
+  hc_title(text = "Subject Race")
+sub_race_pie
+```
+
+It looks like about half of Terry Stops in Seattle are conducted on white people, with the next highest group being black or African American people with just over a quarter of total stops.
+
+Let's look at some summarizing statistics for the police next.
+
+```{r}
+pol_age_chart <- terry_2018 %>%
+  group_by(Officer.Age, Officer.Gender) %>%
+  mutate(Officer.Age = cut(Officer.Age, breaks = c(18, 25, 35, 45, 55, 100))) %>% 
+  summarise(age_count = n()) %>%
+  hchart(
+    "column", hcaes(
+      x = Officer.Age,
+      y = age_count,
+      group = Officer.Gender),
+    stacking = "normal"
+  ) %>% 
+  hc_xAxis(title = list(text = "Officer Age"),
+           categories = as.list(c("18 - 25", "26 - 35", "36 - 45", "46 - 55", "56 +"))) %>% 
+  hc_yAxis(title = list(text = "Frequency")) %>% 
+  hc_title(text = "Officer Age Distribution")
+pol_age_chart
+```
+
+```{r}
+pol_race_pie <- terry_2018 %>% 
+  group_by(Officer.Race) %>% 
+  summarise(count = n()) %>%
+  hchart(
+    "pie", hcaes(x = Officer.Race, y = count),
+    name = "Frequency"
+  ) %>% 
+  hc_title(text = "Officer Race")
+pol_race_pie
+```
+
+White officers by far comprise the majority of officers conducting Terry Stops, with about three quarters of all stops in 2018. 
+
+Next I will see the proportion of how Terry Stops resolved
+
+```{r}
+arrest_pie <- terry_2018 %>%
+  group_by(Stop.Resolution) %>% 
+  summarise(count = n()) %>%
+  hchart(
+    "pie", hcaes(x = Stop.Resolution, y = count),
+    name = "Frequency"
+  ) %>% 
+  hc_title(text = "Terry Stop Resolution")
+arrest_pie
+```
+
+It looks like most Terry Stops result in an Offense Reported or an Arrest.
+
+Next I will look at what time of day do most Terry Stops occur.
+
+```{r}
+time_of_day <- terry_2018 %>% 
+  group_by(Time) %>% 
+  summarise(count = n()) %>%
+  hchart(
+    "column", hcaes(x = Time, y = count),
+    name = "Frequency"
+  ) %>% 
+  hc_chart(polar = TRUE) %>% 
+  hc_title(text = "Terry Stop Time of Day (24 hr)")
+time_of_day
+```
+
+From the above chart we can see that most stops happen in the evening and the least in the morning.

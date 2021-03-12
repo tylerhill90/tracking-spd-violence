@@ -54,14 +54,20 @@ terry_df <- terry_df %>%
     Reported.Date = as_date(Reported.Date),
     Reported.Time =  as.integer(substr(Reported.Time, 1, 2)), # Keep only the hour as an int
     Reported.Date =  as.integer(substr(Reported.Date, 1, 4)), # Keep only the year as an int
-    Officer.ID = as.integer(Officer.ID)
+    Officer.ID = as.integer(Officer.ID),
+    Subject.Age.Group = gsub("56 and Above", "56 +", Subject.Age.Group),
+    Officer.Age = 2021 - Officer.YOB,
+    Officer.Gender = gsub("M", "Male", Officer.Gender),
+    Officer.Gender = gsub("F", "Female", Officer.Gender),
+    Frisk.Flag = ifelse(Frisk.Flag == "Y", "Yes", "No")
   ) %>% 
   drop_na(Beat) %>% 
   rename(
     Year = Reported.Date,
     Time = Reported.Time
   ) %>% 
-  filter(Year > 2017) # Only keep observations after 2017
+  filter(Year > 2017, # Only keep observations after 2017
+         Officer.YOB != 1900)  # Erroneous data
 
 str(terry_df)
 ```
