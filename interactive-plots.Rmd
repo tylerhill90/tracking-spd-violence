@@ -186,12 +186,26 @@ time_of_day <- terry_2018 %>%
   group_by(Time) %>% 
   summarise(count = n()) %>%
   hchart(
-    "column", hcaes(x = Time, y = count),
+    "column", hcaes(
+      x = Time,
+      y = count
+      ),
     name = "Frequency"
-  ) %>% 
+    ) %>% 
   hc_chart(polar = TRUE) %>% 
-  hc_title(text = "Terry Stop Time of Day (24 hr)")
+  hc_title(text = "Terry Stop Time of Day (24 hr)") %>% 
+  hc_xAxis(
+    categories = as.list(paste(0:23, ":00", sep = ""))
+    )
 time_of_day
 ```
 
 From the above chart we can see that most stops happen in the evening and the least in the morning.
+
+## In Summary
+
+Below we can see the layout I came up with in my concept sketches. This shows how the above figures will ultimately be arranged in the shiny app. Not all the same information is available for each Category but I will keep what summary visualizations I can. Also, only long/lat is available for the shootings data so I will just show their exacts locations on the map.
+
+NOTE: I am only using data for the years 2018 through 2020 now.
+
+![Concept Sketch of Shiny App](ConceptSketch/ConceptSketch.png)
