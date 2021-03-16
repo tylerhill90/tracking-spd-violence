@@ -49,9 +49,9 @@ server <- function(input, output) {
   })
   
   # Generate a chloropleth map according to what year is selected
-  # Set chloropleth color palette
   output$map <- renderLeaflet({
     terry_map_data()
+    
     bins <- c(0, 25, 50, 100, 150, 200, 300, Inf)
     pal <- colorBin("Oranges", domain = beats$total_stops, bins = bins)
     
