@@ -14,33 +14,36 @@ library(RColorBrewer)
 # Load data and helper functions
 source("helpers.R")
 
-
-ui <- dashboardPage(
-  dashboardHeader(),
-  dashboardSidebar(),
-  dashboardBody(
+ui <- fluidPage(
       fluidRow(
         box(
           h2("Terry Stops"),
-          p("Chloropleth of where SPD conducts Terry Stops for the given year."),
-          p("Map sectioned by SPD beats. Select a beat to see it's summary statistics."),
+          p("Chloropleth of where Seattle Police Department conducts Terry Stops for the given year."),
+          p("Map sectioned by SPD beats. Hover over a beat to see it's summary statistics. Click a beat to zoom in."),
           sliderInput("year", h4("Select Year"),
                       min = 2018, max = 2020, value = 2018,
-                      sep = ""),
+                      sep = "",
+                      width = "100%"),
           leafletOutput("map")
         ),
         
         box(
-          h2("Summary Statistics"),
-          highchartOutput("subject_race", height = "300px"),
-          highchartOutput("officer_race", height = "300px")
+          h2("Summary Statistics for the Year"),
+          selectInput("plot_type", "Stat Types:", 
+                      choices=c("Race", "Age", "Other")
+          ),
+          conditionalPanel(
+            condition = "input.plot_type == 'Race'",
+            highchartOutput("race_compare"),
+            p("While the total proportion of SPD officers conducting Terry Stops seems to somewhat accurately reflect Seattle demographics as a whole, there is a clear disparity in the subjects who get stopped in Terry Stops not reflecting the overall city's demographics. This is most notabe in the significant disparity between black subjects of Terry Stops and the overall black proportion of residents in Seattle."),
+            helpText("NOTE: The Seattle demographic data is from a 2014-2018 American Community Survey (ACS) 5-Year Estimates (U.S. Census Bureau)")          
+            )
+
         )
         
       )
       
     )
-  
-)
 
 server <- function(input, output) {
   # Update Terry data when slider changes
@@ -48,7 +51,9 @@ server <- function(input, output) {
     get_terry_years_df(as.integer(input$year), as.integer(input$year))
   })
   
-  # Generate a chloropleth map according to what year is selected
+  #####################
+  ## Chloropleth map ##
+  #####################
   output$map <- renderLeaflet({
     terry_map_data()
     
@@ -85,62 +90,81 @@ server <- function(input, output) {
       setMaxBounds(-122.5597, 47.84913,  -122.1244, 47.38173)
   })
   
-  # Zoom in on selected beat
+  ##############################
+  ## Zoom in on selected beat ##
+  ##############################
   observeEvent(input$map_shape_click, {
     click <- input$map_shape_click
     leafletProxy("map") %>% 
       setView(lng = click$lng, lat = click$lat, zoom = 12)
   })
   
-  # Plot subject race pie chart
-  output$subject_race <- renderHighchart({
+  #####################################################
+  ## Plot line graph showing disparity between races ##
+  #####################################################
+  output$race_compare <- renderHighchart(({
     terry_map_data()
-    chart_data <- terry_year_df %>% 
-      group_by(Subject.Perceived.Race) %>% 
-      summarise(count = n())
     
-    # Add unrepresented races back in for coloring purposes
-    dif_races <- setdiff(unique(terry_df$Officer.Race), chart_data$Subject.Perceived.Race)
-    for (b in dif_races) {
-      chart_data <- chart_data %>%
-        add_row(Subject.Perceived.Race = b, count = 0)
-    }
-    
-    chart_data %>% 
-      arrange(Subject.Perceived.Race) %>% 
-      hchart(
-        "pie", hcaes(x = Subject.Perceived.Race, y = count),
-        name = "Frequency"
-      ) %>% 
-      hc_title(text = "Subject Race") %>% 
-      hc_colors(race_color_set)
-  })
-  
-  # Plot officer race pie chart
-  output$officer_race <- renderHighchart(({
-    terry_map_data()
-    chart_data <- terry_year_df %>% 
+    # Get officer data
+    officer_data <- terry_year_df %>% 
       group_by(Officer.Race) %>% 
-      summarise(count = n())
+      summarise(n = n()) %>% 
+      mutate(Officer = round((n / sum(n))*100, 1)) %>% 
+      select(-n) %>% 
+      rename(race = Officer.Race)
     
     # Add unrepresented races back in for coloring purposes
-    dif_races <- setdiff(unique(terry_df$Subject.Perceived.Race), chart_data$Officer.Race)
+    dif_races <- setdiff(unique(terry_df$Subject.Perceived.Race), officer_data$race)
     for (b in dif_races) {
-      chart_data <- chart_data %>%
-        add_row(Officer.Race = b, count = 0)
+      officer_data <- officer_data %>%
+        add_row(race = b, Officer = 0)
     }
     
+    # Get subject data
+    subject_data <- terry_year_df %>% 
+      group_by(Subject.Perceived.Race) %>% 
+      summarise(n = n()) %>% 
+      mutate(Subject = round((n / sum(n))*100, 1)) %>% 
+      select(-n) %>% 
+      rename(race = Subject.Perceived.Race)
+    
+    # Add unrepresented races back in for coloring purposes
+    dif_races <- setdiff(unique(terry_df$Officer.Race), subject_data$race)
+    for (b in dif_races) {
+      subject_data <- subject_data %>%
+        add_row(race = b, Subject = 0)
+    }
+    
+    # Seattle Demo Data
+    # https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity
+    s_demo_data <- data.frame(
+      "race" = c("American Indian/Alaska Native",
+                 "Asian",
+                 "Black",
+                 "Nat Hawaiian/Oth Pac Islander",
+                 "Unknown",
+                 "White",
+                 "Multi-Racial",
+                 "Hispanic"),
+      "Seattle" = c(0.5, 14.9, 6.8, 0.3, 0.3, 64.5, 6.0, 6.6)
+    )
+    
+    # Join the data, pivot longer, and chart it
+    chart_data <- inner_join(officer_data, s_demo_data, by = "race") 
+    chart_data <- inner_join(chart_data, subject_data, by = "race")%>%
+      pivot_longer(!race, names_to = "Type", values_to = "Percent")
     chart_data %>% 
-      arrange(Officer.Race) %>% 
       hchart(
-        "pie", hcaes(x = Officer.Race, y = count),
-        name = "Frequency"
+        "line",
+        hcaes(x = Type, y = Percent, group = race)
       ) %>% 
-      hc_title(text = "Officer Race") %>% 
-      hc_colors(race_color_set)
+      hc_title(text = "Comparing Officer and Subject Race Differentials")
+  
   }))
   
-  # Plot time of day polar bar chart
+  ######################################
+  ## Plot time of day polar bar chart ##
+  ######################################
   output$time <- renderHighchart({
     terry_map_data()
     terry_year_df %>% 

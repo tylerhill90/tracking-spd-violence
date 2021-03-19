@@ -209,3 +209,12 @@ Below we can see the layout I came up with in my concept sketches. This shows ho
 NOTE: I am only using data for the years 2018 through 2020 now.
 
 ![Concept Sketch of Shiny App](ConceptSketch/ConceptSketch.png)
+
+## More Charts!
+
+```{r}
+terry_2018 %>% 
+  group_by(Officer.Race) %>% 
+  summarise(count = n())
+```
+
