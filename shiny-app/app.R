@@ -9,12 +9,27 @@ library(sf)
 library(htmltools)
 library(tigris)
 library(highcharter)
-library(RColorBrewer)
+library(shinyWidgets)
+library(shinyjs)
 
 # Load data and helper functions
 source("helpers.R")
 
-ui <- fluidPage(
+ui <- dashboardPage(
+  dashboardHeader(
+    title = "Examining Seatle Police Department Terry Stop Data",
+    titleWidth = 600
+  ),
+  dashboardSidebar(),
+  dashboardBody(
+    useShinyjs(),
+    fluidPage(
+      setBackgroundColor(
+        color = c("#1A5276 ", "#34495E"),
+        gradient = c("linear", "radial"),
+        direction = c("bottom", "top", "right", "left"),
+        shinydashboard = TRUE
+      ),
       fluidRow(
         box(
           h2(textOutput("map_title")),
@@ -23,6 +38,7 @@ ui <- fluidPage(
                    "The map is sectioned by SPD beats. Hover over a beat to see it's name and total number of stops.",
                    tags$br(),
                    "Click a beat to zoom in."),
+          br(),
           leafletOutput("map"),
           selectInput("year", h4("Select a year"),
                       choices = list("2018" = 2018, "2019" = 2019, "2020" = 2020),
@@ -38,12 +54,15 @@ ui <- fluidPage(
           conditionalPanel(
             condition = "input.plot_type == 'Race'",
             highchartOutput("race_compare"),
-            p("This plot shows how the proportion of officer and subject race in Terry Stops compares to Seattle's racial proportions as a whole. 
+            tags$div(
+              "This plot shows how the proportion of officer and subject race in Terry Stops compares to ",
+              tags$a(href = "https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity",
+                     "Seattle's racial demographics"),
+              " as a whole. 
               The slope between points shows how over or under represented a race is. 
               White police officers seem to be over represented where as whitie subjects of Terry Stops are under represented. 
               While black officers invlovled in Terry Stops seem to be accurately reflected (flat slope), black subjects of Terry Stops are clearly over represented when compared to Seattle demographics as a whole.
-              "),
-            helpText("NOTE: The Seattle demographic data is from a 2014-2018 American Community Survey (ACS) 5-Year Estimates (U.S. Census Bureau)")          
+              ")
             ),
           
           ## Age ##
@@ -73,13 +92,17 @@ ui <- fluidPage(
         )
       )
     )
+  )
+)
 
 server <- function(input, output) {
+  addClass(selector = "body", class = "sidebar-collapse")
+  
   #####################################
   ## Update the data with user input ##
   #####################################
   terry_map_data <- eventReactive( input$year, {
-    get_terry_years_df(as.integer(input$year), as.integer(input$year))
+    get_terry_years_df(as.integer(input$year))
   })
 
   ###############
@@ -139,7 +162,8 @@ server <- function(input, output) {
                 title = NULL,
                 position = "bottomright") %>% 
       setView((-122.4597 + -122.2244)/2, (47.48173+47.74913)/2, 10) %>% 
-      setMaxBounds(-122.5597, 47.84913,  -122.1244, 47.38173)
+      setMaxBounds(-122.5597, 47.84913,  -122.1244, 47.38173) %>%
+      addProviderTiles(providers$Stamen.TonerLite)
   })
   
   ##############################

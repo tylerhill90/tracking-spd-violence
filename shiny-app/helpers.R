@@ -14,12 +14,12 @@ source("data.R")
 #################
 ## TERRY STOPS ##
 #################
-get_terry_years_df <- function(start_y, stop_y) {
+get_terry_years_df <- function(year) {
   # Subset data by year
   # Report total stops that year
   # Update shapefile accordingly
   terry_year_df <- terry_df %>% 
-    filter(Year %in% start_y:stop_y)
+    filter(Year == year)
   
   # Total number of Terry Stops that year
   n_year_terries <- nrow(terry_year_df)
