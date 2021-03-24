@@ -73,11 +73,18 @@ n_total_terries <- nrow(terry_df)
 assign("n_total_terries", n_total_terries, envir = .GlobalEnv)
 
 
-##################
-## USE OF FORCE ##
-##################
-
-
-#########
-## OIS ##
-#########
+################################
+## # Seattle Demographic Data ##
+################################
+# https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity
+s_demo_data <- data.frame(
+  "race" = c("American Indian/Alaska Native",
+             "Asian",
+             "Black",
+             "Nat Hawaiian/Oth Pac Islander",
+             "Unknown",
+             "White",
+             "Multi-Racial",
+             "Hispanic"),
+  "Seattle" = c(0.5, 14.9, 6.8, 0.3, 0.3, 64.5, 6.0, 6.6)
+)

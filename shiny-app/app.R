@@ -17,38 +17,87 @@ source("helpers.R")
 ui <- fluidPage(
       fluidRow(
         box(
-          h2("Terry Stops"),
-          p("Chloropleth of where Seattle Police Department conducts Terry Stops for the given year."),
-          p("Map sectioned by SPD beats. Hover over a beat to see it's summary statistics. Click a beat to zoom in."),
-          sliderInput("year", h4("Select Year"),
-                      min = 2018, max = 2020, value = 2018,
-                      sep = "",
-                      width = "100%"),
-          leafletOutput("map")
+          h2(textOutput("map_title")),
+          tags$div("Below is a choropleth of where Seattle Police Department (SPD) conducts Terry Stops for the given year.",
+                   tags$br(),
+                   "The map is sectioned by SPD beats. Hover over a beat to see it's name and total number of stops.",
+                   tags$br(),
+                   "Click a beat to zoom in."),
+          leafletOutput("map"),
+          selectInput("year", h4("Select a year"),
+                      choices = list("2018" = 2018, "2019" = 2019, "2020" = 2020),
+                      selected = 2018)
         ),
         
         box(
-          h2("Summary Statistics for the Year"),
+          h2(textOutput("stats_title")),
           selectInput("plot_type", "Stat Types:", 
-                      choices=c("Race", "Age", "Other")
+                      choices=c("Race", "Age", "Gender", "Time of Day")
           ),
+          ## Race ##
           conditionalPanel(
             condition = "input.plot_type == 'Race'",
             highchartOutput("race_compare"),
-            p("While the total proportion of SPD officers conducting Terry Stops seems to somewhat accurately reflect Seattle demographics as a whole, there is a clear disparity in the subjects who get stopped in Terry Stops not reflecting the overall city's demographics. This is most notabe in the significant disparity between black subjects of Terry Stops and the overall black proportion of residents in Seattle."),
+            p("This plot shows how the proportion of officer and subject race in Terry Stops compares to Seattle's racial proportions as a whole. 
+              The slope between points shows how over or under represented a race is. 
+              White police officers seem to be over represented where as whitie subjects of Terry Stops are under represented. 
+              While black officers invlovled in Terry Stops seem to be accurately reflected (flat slope), black subjects of Terry Stops are clearly over represented when compared to Seattle demographics as a whole.
+              "),
             helpText("NOTE: The Seattle demographic data is from a 2014-2018 American Community Survey (ACS) 5-Year Estimates (U.S. Census Bureau)")          
-            )
-
+            ),
+          
+          ## Age ##
+          conditionalPanel(
+            condition = "input.plot_type == 'Age'",
+            highchartOutput("age"),
+            p("LOrum ipsum unum
+              ")
+          ),
+          
+          ## Gender ##
+          conditionalPanel(
+            condition = "input.plot_type == 'Gender'",
+            highchartOutput("gender"),
+            p("LOrum ipsum unum
+              ")
+          ),
+          
+          ## Other ##
+          conditionalPanel(
+            condition = "input.plot_type == 'Time of Day'",
+            highchartOutput("time"),
+            p("LOrum ipsum unum
+              ")
+          )
+          
         )
-        
       )
-      
     )
 
 server <- function(input, output) {
-  # Update Terry data when slider changes
+  #####################################
+  ## Update the data with user input ##
+  #####################################
   terry_map_data <- eventReactive( input$year, {
     get_terry_years_df(as.integer(input$year), as.integer(input$year))
+  })
+
+  ###############
+  ## Map Title ##
+  ###############
+  output$map_title <- renderText({
+    terry_map_data()
+    n_stops <- formatC(nrow(terry_year_df), format = "d", big.mark = ",")
+    paste("Terry Stops in ", input$year, ": ", n_stops, sep = "")
+  })
+  
+  #################
+  ## Stats Title ##
+  #################
+  output$stats_title <- renderText({
+    terry_map_data()
+    n_stops <- formatC(nrow(terry_year_df), format = "d", big.mark = ",")
+    paste("Summary Statistics for", input$year)
   })
   
   #####################
@@ -66,7 +115,10 @@ server <- function(input, output) {
       sep="") %>%
       lapply(htmltools::HTML)
     
-    leaflet(options = leafletOptions(minZoom = 10)) %>% 
+    leaflet(options = leafletOptions(
+      minZoom = 10,
+      zoomControl = FALSE
+      )) %>% 
       addTiles() %>% 
       addPolygons(data = beats,
                   stroke = 1,
@@ -99,9 +151,9 @@ server <- function(input, output) {
       setView(lng = click$lng, lat = click$lat, zoom = 12)
   })
   
-  #####################################################
-  ## Plot line graph showing disparity between races ##
-  #####################################################
+  ################################################
+  ## Line graph showing disparity between races ##
+  ################################################
   output$race_compare <- renderHighchart(({
     terry_map_data()
     
@@ -135,36 +187,75 @@ server <- function(input, output) {
         add_row(race = b, Subject = 0)
     }
     
-    # Seattle Demo Data
-    # https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity
-    s_demo_data <- data.frame(
-      "race" = c("American Indian/Alaska Native",
-                 "Asian",
-                 "Black",
-                 "Nat Hawaiian/Oth Pac Islander",
-                 "Unknown",
-                 "White",
-                 "Multi-Racial",
-                 "Hispanic"),
-      "Seattle" = c(0.5, 14.9, 6.8, 0.3, 0.3, 64.5, 6.0, 6.6)
-    )
-    
     # Join the data, pivot longer, and chart it
     chart_data <- inner_join(officer_data, s_demo_data, by = "race") 
-    chart_data <- inner_join(chart_data, subject_data, by = "race")%>%
+    chart_data <- inner_join(chart_data, subject_data, by = "race") %>%
       pivot_longer(!race, names_to = "Type", values_to = "Percent")
     chart_data %>% 
       hchart(
         "line",
         hcaes(x = Type, y = Percent, group = race)
       ) %>% 
-      hc_title(text = "Comparing Officer and Subject Race Differentials")
+      hc_title(text = "Comparing officer and subject race in Terry Stops to Seattle demographics")
   
   }))
   
-  ######################################
-  ## Plot time of day polar bar chart ##
-  ######################################
+  ####################
+  ## Age  bar chart ##
+  ####################
+  output$age <- renderHighchart(({
+    terry_map_data()
+    
+    # Get subject data
+    subject_data <- terry_year_df %>% 
+      group_by(Subject.Age.Group) %>% 
+      summarise(Subject = n()) %>% 
+      rename(
+        age = "Subject.Age.Group"
+      )
+    
+    # Get officer data
+    officer_data <- terry_year_df %>% 
+      group_by(Officer.Age) %>%
+      mutate(Officer.Age = cut(Officer.Age, breaks = c(1, 17, 25, 35, 45, 55, Inf))) %>% 
+      summarise(Officer = n()) %>% 
+      rename(
+        age = "Officer.Age"
+      ) %>% 
+      mutate(
+        age = gsub("\\(17.+", "18 - 25", age),
+        age = gsub("\\(25.+", "26 - 35", age),
+        age = gsub("\\(35.+", "36 - 45", age),
+        age = gsub("\\(45.+", "46 - 55", age),
+        age = gsub("\\(55.+", "56 +", age)
+      )
+    
+    # Join the data and chart
+    chart_data <- inner_join(subject_data, officer_data, by = "age") %>% 
+      pivot_longer(!age, names_to = "Type", values_to = "Frequency")
+    chart_data %>% 
+      hchart(
+        "column", hcaes(
+          x = age,
+          y = Frequency,
+          group = Type
+        )
+      ) %>% 
+      hc_yAxis(title = list(text = "Frequency")) %>% 
+      hc_title(text = "Age Distribution")
+  }))
+  
+  ######################
+  ## Gender pie chart ##
+  ######################
+  output$gender <- renderHighchart(({
+    terry_map_data()
+    
+  }))
+  
+  #################################
+  ## Time of day polar bar chart ##
+  #################################
   output$time <- renderHighchart({
     terry_map_data()
     terry_year_df %>% 
@@ -180,8 +271,10 @@ server <- function(input, output) {
       hc_chart(polar = TRUE) %>% 
       hc_title(text = "Terry Stop Time of Day (24 hr)") %>% 
       hc_xAxis(
+        title = "",
         categories = as.list(paste(0:23, ":00", sep = ""))
-      )
+      ) %>% 
+      hc_yAxis(title = "")
   })
 }
 
