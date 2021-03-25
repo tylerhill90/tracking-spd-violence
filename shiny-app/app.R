@@ -32,12 +32,10 @@ ui <- dashboardPage(
       ),
       fluidRow(
         box(
-          h2(textOutput("map_title")),
-          tags$div("Below is a choropleth of where Seattle Police Department (SPD) conducts Terry Stops for the given year.",
-                   tags$br(),
-                   "The map is sectioned by SPD beats. Hover over a beat to see it's name and total number of stops.",
-                   tags$br(),
-                   "Click a beat to zoom in."),
+          h3(textOutput("map_title")),
+          tags$div('Below is a choropleth of where Seattle Police Department (SPD) conduct Terry Stops for the given year. 
+          The map is sectioned by the "beats" that SPD officers are assigned to work. Hover over a beat to see it\'s name
+                   and total number of stops for the selected year. Click a beat to zoom in.'),
           br(),
           leafletOutput("map"),
           selectInput("year", h4("Select a year"),
@@ -46,10 +44,41 @@ ui <- dashboardPage(
         ),
         
         box(
-          h2(textOutput("stats_title")),
+          h3(textOutput("stats_title")),
           selectInput("plot_type", "Stat Types:", 
-                      choices=c("Race", "Age", "Gender", "Time of Day")
+                      choices=c("Call Type", "Resolution", "Race", "Age", "Gender", "Time of Day")
           ),
+          
+          ## Call Type ##
+          conditionalPanel(
+            condition = "input.plot_type == 'Call Type'",
+            highchartOutput("call_type"),
+            tags$div(
+              "This plot shows how the proportion of officer and subject race in Terry Stops compares to ",
+              tags$a(href = "https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity",
+                     "Seattle's racial demographics"),
+              " as a whole. 
+              The slope between points shows how over or under represented a race is. 
+              White police officers seem to be over represented where as whitie subjects of Terry Stops are under represented. 
+              While black officers invlovled in Terry Stops seem to be accurately reflected (flat slope), black subjects of Terry Stops are clearly over represented when compared to Seattle demographics as a whole.
+              ")
+          ),
+          
+          ## Resolution ##
+          conditionalPanel(
+            condition = "input.plot_type == 'Resolution'",
+            highchartOutput("resolution"),
+            tags$div(
+              "This plot shows how the proportion of officer and subject race in Terry Stops compares to ",
+              tags$a(href = "https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity",
+                     "Seattle's racial demographics"),
+              " as a whole. 
+              The slope between points shows how over or under represented a race is. 
+              White police officers seem to be over represented where as whitie subjects of Terry Stops are under represented. 
+              While black officers invlovled in Terry Stops seem to be accurately reflected (flat slope), black subjects of Terry Stops are clearly over represented when compared to Seattle demographics as a whole.
+              ")
+          ),
+          
           ## Race ##
           conditionalPanel(
             condition = "input.plot_type == 'Race'",
@@ -76,7 +105,10 @@ ui <- dashboardPage(
           ## Gender ##
           conditionalPanel(
             condition = "input.plot_type == 'Gender'",
-            highchartOutput("gender"),
+            fluidRow(
+              column(6, highchartOutput("off_gender")),
+              column(6, highchartOutput("sub_gender"))
+            ),
             p("LOrum ipsum unum
               ")
           ),
@@ -175,6 +207,38 @@ server <- function(input, output) {
       setView(lng = click$lng, lat = click$lat, zoom = 12)
   })
   
+  ##########################
+  ## Resolution pie chart ##
+  ##########################
+  output$resolution <- renderHighchart(({
+    terry_map_data()
+    
+    terry_year_df %>%
+      group_by(Stop.Resolution) %>% 
+      summarise(count = n()) %>%
+      hchart(
+        "pie", hcaes(x = Stop.Resolution, y = count),
+        name = "Frequency"
+      ) %>% 
+      hc_title(text = "Terry Stop Resolutions")
+  }))
+  
+  #########################
+  ## Call type pie chart ##
+  #########################
+  output$call_type <- renderHighchart(({
+    terry_map_data()
+    
+    terry_year_df %>%
+      group_by(Final.Call.Type) %>% 
+      summarise(count = n()) %>%
+      hchart(
+        "pie", hcaes(x = Final.Call.Type, y = count),
+        name = "Frequency"
+      ) %>% 
+      hc_title(text = "Terry Stop Call Type")
+  }))
+  
   ################################################
   ## Line graph showing disparity between races ##
   ################################################
@@ -269,12 +333,37 @@ server <- function(input, output) {
       hc_title(text = "Age Distribution")
   }))
   
-  ######################
-  ## Gender pie chart ##
-  ######################
-  output$gender <- renderHighchart(({
+  #######################
+  ## Gender pie charts ##
+  #######################
+  output$sub_gender <- renderHighchart(({
     terry_map_data()
     
+    terry_year_df %>%
+      group_by(Subject.Perceived.Gender) %>% 
+      summarise(count = n()) %>%
+      arrange(desc(count)) %>%
+      hchart(
+        "pie", hcaes(x = Subject.Perceived.Gender, y = count),
+        name = "Frequency",
+        size = 225
+      ) %>% 
+      hc_title(text = "Subject Perceived Gender")
+  }))
+    
+    output$off_gender <- renderHighchart(({
+      terry_map_data()
+    
+      terry_year_df %>%
+        group_by(Officer.Gender) %>% 
+        summarise(count = n()) %>%
+        arrange(desc(count)) %>% 
+        hchart(
+          "pie", hcaes(x = Officer.Gender, y = count),
+          name = "Frequency",
+          size = 225
+        ) %>% 
+        hc_title(text = "Officer Gender")
   }))
   
   #################################
@@ -282,6 +371,7 @@ server <- function(input, output) {
   #################################
   output$time <- renderHighchart({
     terry_map_data()
+    
     terry_year_df %>% 
       group_by(Time) %>% 
       summarise(count = n()) %>%
