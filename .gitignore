@@ -1,7 +1,2 @@
-*.*
-!.gitignore
-!*.Rmd
-!*.R
-!*.md
-!*.html
+.Rhistory
 .Rproj.user

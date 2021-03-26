@@ -30,6 +30,15 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
+    tags$style(
+      HTML("
+      img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    ")
+    ),
     useShinyjs(),
     tabItems(
       tabItem(tabName = "explain",
@@ -58,6 +67,9 @@ ui <- dashboardPage(
                    "Terry Stop"),
             'Wikipedia article.', 
             tags$br(),
+            tags$br(),
+            tags$img(src = "t-stop.jpg", width = "50%", ),
+            tags$br(),
             tags$br()
           ),
           helpText("References:"),
@@ -69,7 +81,25 @@ ui <- dashboardPage(
                           "United States Supreme Court - Whren v. United States - Court Documents"))
         ),
         box(
-          title = "Where does the data come from?", status = "primary", solidHeader = TRUE, width = 6
+          title = "Where does the data come from?", status = "primary", solidHeader = TRUE, width = 6,
+          tags$div(
+            'The data for this project comes from ',
+            tags$a(href = "https://data.seattle.gov/",
+                   "The City of Seattle's Open Data Portal"),
+            ', specifically the ',
+            tags$a(href = "https://data.seattle.gov/Public-Safety/Terry-Stops/28ny-9ts8",
+                   "Terry Stops"),
+            'data from the ',
+            tags$a(href = "http://www.seattle.gov/police",
+            "Seattle Polic Department"),
+            '. The map of SPD beats come from ',
+            tags$a(href = "https://data.seattle.gov/dataset/Seattle-Police-Beats-2018-Present/ex83-w2uk",
+                   "this"),
+            'dataset, from the City of Seattle GIS Program.',
+            tags$br(),
+            tags$br(),
+            tags$img(src = "SPD.png", width = "50%")
+          )
         )
       ),
       tabItem(tabName = "data",
@@ -281,7 +311,9 @@ server <- function(input, output) {
       setView(lng = click$lng, lat = click$lat, zoom = 12)
   })
   
+  ##################################
   ## Frequency by Time Line Graph ##
+  ##################################
   output$time_series <- renderHighchart(({
     terry_map_data()
     
