@@ -20,110 +20,128 @@ ui <- dashboardPage(
     title = "Examining Seatle Police Department Terry Stop Data",
     titleWidth = 600
   ),
-  dashboardSidebar(),
+  dashboardSidebar(
+    sidebarMenu(
+      id = "tabs",
+      menuItem("Background", tabName = "explain", icon = icon("question")),
+      menuItem("Explore the data", tabName = "data", icon = icon("search"))
+    )
+  ),
   dashboardBody(
     useShinyjs(),
-    fluidPage(
-      setBackgroundColor(
-        color = c("#1A5276 ", "#34495E"),
-        gradient = c("linear", "radial"),
-        direction = c("bottom", "top", "right", "left"),
-        shinydashboard = TRUE
-      ),
-      fluidRow(
+    tabItems(
+      tabItem(tabName = "explain",
         box(
-          h3(textOutput("map_title")),
-          tags$div('Below is a choropleth of where Seattle Police Department (SPD) conduct Terry Stops for the given year. 
-          The map is sectioned by the "beats" that SPD officers are assigned to work. Hover over a beat to see it\'s name
-                   and total number of stops for the selected year. Click a beat to zoom in.'),
-          br(),
-          leafletOutput("map"),
-          selectInput("year", h4("Select a year"),
-                      choices = list("2018" = 2018, "2019" = 2019, "2020" = 2020),
-                      selected = 2018)
+          title = "What is a Terry Stop?", status = "primary", solidHeader = TRUE, width = 6
         ),
-        
         box(
-          h3(textOutput("stats_title")),
-          selectInput("plot_type", "Stat Types:", 
-                      choices=c("Call Type", "Resolution", "Race", "Age", "Gender", "Time of Day")
-          ),
-          
-          ## Call Type ##
-          conditionalPanel(
-            condition = "input.plot_type == 'Call Type'",
-            highchartOutput("call_type"),
-            tags$div(
-              "This plot shows how the proportion of officer and subject race in Terry Stops compares to ",
-              tags$a(href = "https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity",
-                     "Seattle's racial demographics"),
-              " as a whole. 
-              The slope between points shows how over or under represented a race is. 
-              White police officers seem to be over represented where as whitie subjects of Terry Stops are under represented. 
-              While black officers invlovled in Terry Stops seem to be accurately reflected (flat slope), black subjects of Terry Stops are clearly over represented when compared to Seattle demographics as a whole.
-              ")
-          ),
-          
-          ## Resolution ##
-          conditionalPanel(
-            condition = "input.plot_type == 'Resolution'",
-            highchartOutput("resolution"),
-            tags$div(
-              "This plot shows how the proportion of officer and subject race in Terry Stops compares to ",
-              tags$a(href = "https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity",
-                     "Seattle's racial demographics"),
-              " as a whole. 
-              The slope between points shows how over or under represented a race is. 
-              White police officers seem to be over represented where as whitie subjects of Terry Stops are under represented. 
-              While black officers invlovled in Terry Stops seem to be accurately reflected (flat slope), black subjects of Terry Stops are clearly over represented when compared to Seattle demographics as a whole.
-              ")
-          ),
-          
-          ## Race ##
-          conditionalPanel(
-            condition = "input.plot_type == 'Race'",
-            highchartOutput("race_compare"),
-            tags$div(
-              "This plot shows how the proportion of officer and subject race in Terry Stops compares to ",
-              tags$a(href = "https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity",
-                     "Seattle's racial demographics"),
-              " as a whole. 
-              The slope between points shows how over or under represented a race is. 
-              White police officers seem to be over represented where as whitie subjects of Terry Stops are under represented. 
-              While black officers invlovled in Terry Stops seem to be accurately reflected (flat slope), black subjects of Terry Stops are clearly over represented when compared to Seattle demographics as a whole.
-              ")
-            ),
-          
-          ## Age ##
-          conditionalPanel(
-            condition = "input.plot_type == 'Age'",
-            highchartOutput("age"),
-            p("LOrum ipsum unum
-              ")
-          ),
-          
-          ## Gender ##
-          conditionalPanel(
-            condition = "input.plot_type == 'Gender'",
-            fluidRow(
-              column(6, highchartOutput("off_gender")),
-              column(6, highchartOutput("sub_gender"))
-            ),
-            p("LOrum ipsum unum
-              ")
-          ),
-          
-          ## Other ##
-          conditionalPanel(
-            condition = "input.plot_type == 'Time of Day'",
-            highchartOutput("time"),
-            p("LOrum ipsum unum
-              ")
-          )
-          
+          title = "Where does the data come from?", status = "primary", solidHeader = TRUE, width = 6
         )
+      ),
+      tabItem(tabName = "data",
+              fluidPage(
+                setBackgroundColor(
+                  color = c("#1A5276 ", "#34495E"),
+                  gradient = c("linear", "radial"),
+                  direction = c("bottom", "top", "right", "left"),
+                  shinydashboard = TRUE
+                ),
+                fluidRow(
+                  box(
+                    title = textOutput("map_title"), status = "primary", solidHeader = TRUE,
+                    tags$div('Below is a choropleth of where Seattle Police Department (SPD) conduct Terry Stops for the given year. 
+                             The map is sectioned by the "beats" that SPD officers are assigned to work. Hover over a beat to see
+                             it\'s nameand total number of stops for the selected year. Click a beat to zoom in.'),
+                    br(),
+                    leafletOutput("map"),
+                    selectInput("year", h4("Select a year"),
+                                choices = list("2018" = 2018, "2019" = 2019, "2020" = 2020),
+                                selected = 2018)
+                  ),
+                  
+                  box(
+                    title = textOutput("stats_title"), status = "primary", solidHeader = TRUE,
+                    selectInput("plot_type", "Stat Types:", 
+                                choices=c("Resolution", "Call Type", "Race", "Age", "Gender", "Time of Day")
+                    ),
+                    
+                    ## Resolution ##
+                    conditionalPanel(
+                      condition = "input.plot_type == 'Resolution'",
+                      highchartOutput("resolution"),
+                      tags$div(
+                        "This plot shows how the proportion of officer and subject race in Terry Stops compares to ",
+                        tags$a(href = "https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity",
+                               "Seattle's racial demographics"),
+                        " as a whole. The slope between points shows how over or under represented a race is. 
+                        White police officers seem to be over represented where as whitie subjects of Terry Stops
+                        are under represented. While black officers invlovled in Terry Stops seem to be accurately
+                        reflected (flat slope), black subjects of Terry Stops are clearly over represented when
+                        compared to Seattle demographics as a whole.")
+                    ),
+                    
+                    ## Call Type ##
+                    conditionalPanel(
+                      condition = "input.plot_type == 'Call Type'",
+                      highchartOutput("call_type"),
+                      tags$div(
+                        "This plot shows how the proportion of officer and subject race in Terry Stops compares to ",
+                        tags$a(href = "https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity",
+                               "Seattle's racial demographics"),
+                        " as a whole. The slope between points shows how over or under represented a race is. 
+                        White police officers seem to be over represented where as whitie subjects of Terry
+                        Stops are under represented. While black officers invlovled in Terry Stops seem to be
+                        accurately reflected (flat slope), black subjects of Terry Stops are clearly over
+                        represented when compared to Seattle demographics as a whole.")
+                    ),
+                    
+                    ## Race ##
+                    conditionalPanel(
+                      condition = "input.plot_type == 'Race'",
+                      highchartOutput("race_compare"),
+                      tags$div(
+                        "This plot shows how the proportion of officer and subject race in Terry Stops compares to ",
+                        tags$a(href = "https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity",
+                               "Seattle's racial demographics"),
+                        " as a whole. The slope between points shows how over or under represented a race is. 
+                        White police officers seem to be over represented where as whitie subjects
+                        of Terry Stops are under represented. While black officers invlovled in Terry
+                        Stops seem to be accurately reflected (flat slope), black subjects of Terry Stops
+                        are clearly over represented when compared to Seattle demographics as a whole.")
+                    ),
+                    
+                    ## Age ##
+                    conditionalPanel(
+                      condition = "input.plot_type == 'Age'",
+                      highchartOutput("age"),
+                      p("LOrum ipsum unum")
+                    ),
+                    
+                    ## Gender ##
+                    conditionalPanel(
+                      condition = "input.plot_type == 'Gender'",
+                      fluidRow(
+                        column(6, highchartOutput("off_gender")),
+                        column(6, highchartOutput("sub_gender"))
+                      ),
+                      p("LOrum ipsum unum
+              ")
+                    ),
+                    
+                    ## Other ##
+                    conditionalPanel(
+                      condition = "input.plot_type == 'Time of Day'",
+                      highchartOutput("time"),
+                      p("LOrum ipsum unum
+              ")
+                    )
+                    
+                  )
+                )
+              )
       )
     )
+    
   )
 )
 
@@ -284,7 +302,7 @@ server <- function(input, output) {
         "line",
         hcaes(x = Type, y = Percent, group = race)
       ) %>% 
-      hc_title(text = "Comparing officer and subject race in Terry Stops to Seattle demographics")
+      hc_title(text = "Comparing Officer and Subject Race to Seattle Demographics")
   
   }))
   
