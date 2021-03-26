@@ -12,6 +12,7 @@ library(tigris)
 library(highcharter)
 library(shinyWidgets)
 library(shinyjs)
+library(xts)
 
 # Load data and helper functions
 source("helpers.R")
@@ -96,7 +97,22 @@ ui <- dashboardPage(
                   box(
                     title = textOutput("stats_title"), status = "primary", solidHeader = TRUE,
                     selectInput("plot_type", "Stat Types:", 
-                                choices=c("Resolution", "Call Type", "Race", "Age", "Gender", "Time of Day")
+                                choices=c("Time Series", "Resolution", "Call Type", "Race", "Age", "Gender", "Time of Day")
+                    ),
+                    
+                    ## Time Series ##
+                    conditionalPanel(
+                      condition = "input.plot_type == 'Time Series'",
+                      highchartOutput("time_series"),
+                      tags$div(
+                        "This plot shows how the proportion of officer and subject race in Terry Stops compares to ",
+                        tags$a(href = "https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity",
+                               "Seattle's racial demographics"),
+                        " as a whole. The slope between points shows how over or under represented a race is. 
+                        White police officers seem to be over represented where as whitie subjects of Terry Stops
+                        are under represented. While black officers invlovled in Terry Stops seem to be accurately
+                        reflected (flat slope), black subjects of Terry Stops are clearly over represented when
+                        compared to Seattle demographics as a whole.")
                     ),
                     
                     ## Resolution ##
@@ -158,18 +174,15 @@ ui <- dashboardPage(
                         column(6, highchartOutput("off_gender")),
                         column(6, highchartOutput("sub_gender"))
                       ),
-                      p("LOrum ipsum unum
-              ")
+                      p("LOrum ipsum unum")
                     ),
                     
                     ## Other ##
                     conditionalPanel(
                       condition = "input.plot_type == 'Time of Day'",
                       highchartOutput("time"),
-                      p("LOrum ipsum unum
-              ")
+                      p("LOrum ipsum unum")
                     )
-                    
                   )
                 )
               )
@@ -217,8 +230,17 @@ server <- function(input, output) {
     pal <- colorBin("Oranges", domain = beats$total_stops, bins = bins)
     
     beat_info <- paste(
-      "Beat: ", beats$beat,"<br/>",
+      "<strong>Beat:</strong> ", beats$beat, "<br/>",
       "Terry Stops: ", beats$total_stops, "<br/>",
+      "<strong>Subject Race</strong><br/>",
+      "Asian: ", beats$Asian, "<br/>",
+      "Black: ", beats$Black, "<br/>",
+      "Hispanic: ", beats$Hispanic, "<br/>",
+      "White: ", beats$White, "<br/>",
+      "American Indian: ", beats$`American Indian/Alaska Native`, "<br/>",
+      "Nat Hawaiian: ", beats$`Nat Hawaiian/Oth Pac Islander`, "</br>",
+      "Multi-racial: ", beats$`Multi-Racial`, "<br/>",
+      "Unknown: ", beats$Unknown, "<br/>",
       sep="") %>%
       lapply(htmltools::HTML)
     
@@ -258,6 +280,21 @@ server <- function(input, output) {
     leafletProxy("map") %>% 
       setView(lng = click$lng, lat = click$lat, zoom = 12)
   })
+  
+  ## Frequency by Time Line Graph ##
+  output$time_series <- renderHighchart(({
+    terry_map_data()
+    
+    chart_data <- terry_year_df %>% 
+      group_by(Reported.Date) %>% 
+      summarise(n = n())
+    
+    # Convert to xts object and chart
+    chart_data <- xts(chart_data[-1], order.by = chart_data$Reported.Date)
+    hchart(chart_data) %>% 
+      hc_title(text = "Frequency of Terry Stops Throughout the Year")
+      
+  }))
   
   ##########################
   ## Resolution pie chart ##

@@ -47,7 +47,7 @@ terry_df <- terry_df %>%
     Final.Call.Type = gsub("--", "", Final.Call.Type),
     Reported.Date = as_date(Reported.Date),
     Reported.Time =  as.integer(substr(Reported.Time, 1, 2)), # Keep only the hour as an int
-    Reported.Date =  as.integer(substr(Reported.Date, 1, 4)), # Keep only the year as an int
+    Year =  as.integer(substr(Reported.Date, 1, 4)), # Keep only the year as an int
     Subject.Age.Group = gsub("56 and Above", "56 +", Subject.Age.Group),
     Officer.Age = 2021 - Officer.YOB,
     Officer.Gender = gsub("M", "Male", Officer.Gender),
@@ -59,7 +59,6 @@ terry_df <- terry_df %>%
     Frisk.Flag = ifelse(Frisk.Flag == "Y", "Yes", "No")
   ) %>%
   rename(
-    Year = Reported.Date,
     Time = Reported.Time
   ) %>% 
   filter(Year %in% 2018:2020, # Only keep observations after 2017
