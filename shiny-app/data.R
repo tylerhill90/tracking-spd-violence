@@ -1,5 +1,6 @@
 ## data.R ##
 # Fetch and clean all the data
+# https://data.seattle.gov/
 
 library(tidyverse)
 library(lubridate)
@@ -8,6 +9,7 @@ library(sf)
 #####################
 ## BEATS SHAPEFILE ##
 #####################
+# https://data.seattle.gov/dataset/Seattle-Police-Beats-2018-Present/ex83-w2uk
 raw_beats <- function() {
   # Reset to clean shapefile
   beats <- st_read("data/Beats/SPD_Beats_WGS84.shp") 
@@ -21,6 +23,7 @@ raw_beats <- function() {
 #################
 ## TERRY STOPS ##
 #################
+# https://data.seattle.gov/Public-Safety/Terry-Stops/28ny-9ts8
 terry_df <- read.csv("data/Terry_Stops.csv")
 
 terry_df <- terry_df %>% 

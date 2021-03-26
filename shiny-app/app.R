@@ -1,4 +1,5 @@
 ## app.R ##
+# Examining SPD Terry Stop data
 
 # Load libraries
 library(shiny)
@@ -32,7 +33,39 @@ ui <- dashboardPage(
     tabItems(
       tabItem(tabName = "explain",
         box(
-          title = "What is a Terry Stop?", status = "primary", solidHeader = TRUE, width = 6
+          title = "What is a Terry Stop?", status = "primary", solidHeader = TRUE, width = 6,
+          tags$div(
+            'In the landmark case Terry v. Ohio, the state of Ohio characterized a Terry Stop as
+            "the right of a police officer... to make an on-the-street stop, interrogate
+            and pat down for weapons (known in street vernacular as \'stop and frisk\')."[1]
+            These detentions must occur with ',
+            tags$a(href = "https://en.wikipedia.org/wiki/Reasonable_suspicion",
+                   "reasonable suspicion"),
+            '. This legal standard of proof falls below the standard of ',
+            tags$a(href = "https://en.wikipedia.org/wiki/Probable_cause",
+                   "probable cause"),
+            ', which is needed to make an arrest, and roughly means that an officer can stop
+            and frisk a subject whom they believeto pose a threat based on "specific and articulable facts...
+            taken together with rational inferences from those facts." [1] You
+            may be wondering if this is in direct conflict with our ',
+            tags$a(href = "https://en.wikipedia.org/wiki/Fourth_Amendment_to_the_United_States_Constitution",
+                   "Fourth Amendment"),
+            'rights but numerous Supreme Court cases have weighed in on this grey area, ruling
+            on issues such as traffic stops in Ohio v. Robinette [2] and pretextual stops in
+            Whren v. United States. [3] For more information you can read the ',
+            tags$a(href = "https://en.wikipedia.org/wiki/Terry_stop",
+                   "Terry Stop"),
+            'Wikipedia article.', 
+            tags$br(),
+            tags$br()
+          ),
+          helpText("References:"),
+          helpText("[1] ", tags$a(href = "https://scholar.google.com/scholar_case?case=17773604035873288886",
+                          "United States Supreme Court - Terry v. Ohio - Court Documents")),
+          helpText("[2] ", tags$a(href = "https://tile.loc.gov/storage-services/service/ll/usrep/usrep519/usrep519033/usrep519033.pdf",
+                          "United States Supreme Court - Ohio v. Robinette - Court Documents")),
+          helpText("[3] ", tags$a(href = "https://scholar.google.com/scholar_case?case=3416424011044753637",
+                          "United States Supreme Court - Whren v. United States - Court Documents"))
         ),
         box(
           title = "Where does the data come from?", status = "primary", solidHeader = TRUE, width = 6
@@ -49,9 +82,10 @@ ui <- dashboardPage(
                 fluidRow(
                   box(
                     title = textOutput("map_title"), status = "primary", solidHeader = TRUE,
+                    tags$img(src = 'data/t-stop.jpg', align = "right"),
                     tags$div('Below is a choropleth of where Seattle Police Department (SPD) conduct Terry Stops for the given year. 
                              The map is sectioned by the "beats" that SPD officers are assigned to work. Hover over a beat to see
-                             it\'s nameand total number of stops for the selected year. Click a beat to zoom in.'),
+                             it\'s nameand total number of stops for the selected year. Click a beat to center and zoom in.'),
                     br(),
                     leafletOutput("map"),
                     selectInput("year", h4("Select a year"),
@@ -173,9 +207,9 @@ server <- function(input, output) {
     paste("Summary Statistics for", input$year)
   })
   
-  #####################
-  ## Chloropleth map ##
-  #####################
+  ####################
+  ## Choropleth map ##
+  ####################
   output$map <- renderLeaflet({
     terry_map_data()
     
@@ -209,7 +243,7 @@ server <- function(input, output) {
       addLegend(pal = pal,
                 values = beats$total_stops,
                 opacity = 0.7,
-                title = NULL,
+                title = "No. of Terry Stops",
                 position = "bottomright") %>% 
       setView((-122.4597 + -122.2244)/2, (47.48173+47.74913)/2, 10) %>% 
       setMaxBounds(-122.5597, 47.84913,  -122.1244, 47.38173) %>%
