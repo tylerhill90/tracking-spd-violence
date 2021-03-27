@@ -10,7 +10,6 @@ library(sf)
 library(htmltools)
 library(tigris)
 library(highcharter)
-library(shinyWidgets)
 library(shinyjs)
 library(xts)
 
@@ -18,10 +17,12 @@ library(xts)
 source("helpers.R")
 
 ui <- dashboardPage(
+  
   dashboardHeader(
     title = "Examining Seatle Police Department Terry Stop Data",
     titleWidth = 600
   ),
+  
   dashboardSidebar(
     sidebarMenu(
       id = "tabs",
@@ -29,6 +30,7 @@ ui <- dashboardPage(
       menuItem("Explore the data", tabName = "data", icon = icon("search"))
     )
   ),
+  
   dashboardBody(
     tags$style(
       HTML("
@@ -39,8 +41,11 @@ ui <- dashboardPage(
       }
     ")
     ),
-    useShinyjs(),
+    
     tabItems(
+      ################
+      ## Background ##
+      ################
       tabItem(tabName = "explain",
         box(
           title = "What is a Terry Stop?", status = "primary", solidHeader = TRUE, width = 6,
@@ -60,7 +65,7 @@ ui <- dashboardPage(
             may be wondering if this is in direct conflict with our ',
             tags$a(href = "https://en.wikipedia.org/wiki/Fourth_Amendment_to_the_United_States_Constitution",
                    "Fourth Amendment"),
-            'rights but numerous Supreme Court cases have weighed in on this grey area, ruling
+            'rights. The Supreme Court has ruled in on this grey area, debating
             on issues such as traffic stops in Ohio v. Robinette [2] and pretextual stops in
             Whren v. United States. [3] For more information you can read the ',
             tags$a(href = "https://en.wikipedia.org/wiki/Terry_stop",
@@ -102,29 +107,28 @@ ui <- dashboardPage(
           )
         )
       ),
+      
+      ##############
+      ## Data tab ##
+      ##############
       tabItem(tabName = "data",
               fluidPage(
-                setBackgroundColor(
-                  color = c("#1A5276 ", "#34495E"),
-                  gradient = c("linear", "radial"),
-                  direction = c("bottom", "top", "right", "left"),
-                  shinydashboard = TRUE
-                ),
                 fluidRow(
                   box(
                     title = textOutput("map_title"), status = "primary", solidHeader = TRUE,
-                    selectInput("year", label = NULL,
+                    selectInput("year", label = "Change the year",
                                 choices = list("2018" = 2018, "2019" = 2019, "2020" = 2020),
                                 selected = 2018),
-                    leafletOutput("map"),
-                    tags$div('Abov is a choropleth of where Seattle Police Department (SPD) conduct Terry Stops for the given year. 
+                    leafletOutput("map", height = 420),
+                    tags$br(),
+                    tags$div('Above is a choropleth of where Seattle Police Department (SPD) conduct Terry Stops for the given year. 
                              The map is sectioned by the "beats" that SPD officers are assigned to work. Hover over a beat to see
                              it\'s nameand total number of stops for the selected year. Click a beat to center and zoom in.')
                   ),
                   
                   box(
                     title = textOutput("stats_title"), status = "primary", solidHeader = TRUE,
-                    selectInput("plot_type", "Stat Types:", 
+                    selectInput("plot_type", "Stat Types", 
                                 choices=c("Time Series", "Resolution", "Call Type", "Race", "Age", "Gender", "Time of Day")
                     ),
                     
@@ -211,8 +215,6 @@ ui <- dashboardPage(
 )
 
 server <- function(input, output) {
-  addClass(selector = "body", class = "sidebar-collapse")
-  
   #####################################
   ## Update the data with user input ##
   #####################################
@@ -280,7 +282,7 @@ server <- function(input, output) {
                     color = "#666",
                     fillOpacity = 0.7,
                     bringToFront = TRUE)) %>%
-      addLegend(pal = pal,
+      leaflet::addLegend(pal = pal,
                 values = beats$total_stops,
                 opacity = 0.7,
                 title = "No. of Terry Stops",
