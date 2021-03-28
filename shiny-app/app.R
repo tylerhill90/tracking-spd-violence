@@ -129,17 +129,19 @@ ui <- dashboardPage(
                   box(
                     title = textOutput("stats_title"), status = "primary", solidHeader = TRUE,
                     selectInput("plot_type", "Stat Types", 
-                                choices=c("Time Series", "Resolution", "Call Type", "Race", "Age", "Gender", "Time of Day")
+                                choices=c("Frequency", "Resolution", "Call Type", "Race", "Age", "Gender", "Time of Day")
                     ),
                     
                     ## Time Series ##
                     conditionalPanel(
-                      condition = "input.plot_type == 'Time Series'",
+                      condition = "input.plot_type == 'Frequency'",
                       highchartOutput("time_series"),
-                      tags$div("Examining the frequency of Terry Stops throughout the year shows a generally stochastic nature when
-                                data is looked at day to day. That said the highest days tend to be in warmer months whereas the
-                                lowest days tend to be in the colder months. An interesting finding comes from the 2020 plot, which
-                                shows a clear decrease in Terry Stops starting in June right after George Floyd's death on May 25th.")
+                      tags$div("Examining the frequency of Terry Stops throughout the year shows a moderate trend towards more stops
+                                being performed in the spring time when we look at the weekly sum. When we look at day to day counts
+                                we see a more stochastic nature to the data. That said the days with higher counts stil tend to be in
+                                warmer months whereas the days with lower counts tend to be in the colder months. An interesting
+                                finding comes from the 2020 plot, which shows a clear decrease in Terry Stops starting in June right
+                                after George Floyd's death on May 25th.")
                     ),
                     
                     ## Resolution ##
@@ -147,7 +149,9 @@ ui <- dashboardPage(
                       condition = "input.plot_type == 'Resolution'",
                       highchartOutput("resolution"),
                       tags$div("From 2018 to 2020 the category Offense Report steadily declines whereas the category 
-                                Field Contact steadily increases. The Arrest category remains about the same over this time span.")
+                                Field Contact steadily increases. The Arrest category remains about the same over this time span.
+                               This may indicate a that there was a change in policy for SPD as to how Terry Stops are to be
+                               approached by the officer, opting for more leniency.")
                     ),
                     
                     ## Call Type ##
@@ -155,10 +159,12 @@ ui <- dashboardPage(
                       condition = "input.plot_type == 'Call Type'",
                       highchartOutput("call_type"),
                       tags$div("Here we see how the Terry Stop was originally dispatched or initiated by the officer.
-                               While there is a lot of data here we can still easily see that the majority of stops
-                               are Unknown, which may indicate an officer not wanting to admit to profiling. Other
-                               leading categories include Suspicous Person, Prowler - Trespass, and Disturbance - Other
-                               all of which could be interpretted as vague.")
+                               While there is a lot of categories here we can still easily see that the majority of stops
+                               are Unknown, which may indicate an officer not wanting to disclose why they stopped a subject.
+                               Other leading categories include Suspicous Person, Prowler - Trespass, and Disturbance - Other
+                               all of which could be interpretted as vague. It seems like a substantial number of these categories
+                               warrant police intervention but there are also a large proportion of possibly dubious reasons
+                               to initiate a Terry Stop present.")
                     ),
                     
                     ## Race ##
@@ -169,19 +175,22 @@ ui <- dashboardPage(
                                tags$a(href = "https://www.seattle.gov/opcd/population-and-demographics/about-seattle#raceethnicity",
                                      "Seattle's racial demographics"),
                                " as a whole.
-                               White police officers seem to be over represented where as white subjects
+                               White police officers seem to be over represented whereas white subjects
                                of Terry Stops are under represented. While black officers invlovled in Terry
-                               Stops seem to be accurately reflected (flat slope), black subjects of Terry Stops
+                               Stops seem to be accurately reflected, black subjects of Terry Stops
                                are clearly over represented when compared to Seattle's demographics as a whole.
-                               Asian officers and subjects are both under represented.")
+                               Asian officers and subjects are both under represented. This data indicates that
+                               SPD has too many white officers and should try harder to employ a more diverse
+                               police force. More importantly, it also clearly shows that black people are disproportionately
+                               involved in Terry Stops compared to their overall representation in Seattle.")
                     ),
                     
                     ## Age ##
                     conditionalPanel(
                       condition = "input.plot_type == 'Age'",
                       highchartOutput("age"),
-                      p("Examining officer and subject age in Terry Stops reveals that they are closely related.
-                        Most Terry Stops are conducted by officers in their late 20's to early 30's and most Terry
+                      p("Examining officer and subject age in Terry Stops reveals that their distributions are closely
+                        related. Most Terry Stops are conducted by officers in their late 20's to early 30's and most Terry
                         Stop subjects fall into this age group as well.")
                     ),
                     
@@ -202,7 +211,7 @@ ui <- dashboardPage(
                       condition = "input.plot_type == 'Time of Day'",
                       highchartOutput("time"),
                       p("In 2018 and 2019 there are clear spikes in Terry Stops at 3am and 7pm. This leads me to think that
-                        there is something else going on, such as a shift change. Another interesting finding to note is
+                        there is something like as a shift change occuring at these times. Another interesting finding to note is
                         the clear dip in Terry Stops around noon, during lunch time.")
                     )
                   )
@@ -313,9 +322,8 @@ server <- function(input, output) {
     
     # Convert to xts object and chart
     chart_data <- xts(chart_data[-1], order.by = chart_data$Reported.Date)
-    hchart(chart_data) %>% 
+    hchart(chart_data, type = "column", name = "Count") %>%
       hc_title(text = "Frequency of Terry Stops Throughout the Year")
-      
   }))
   
   ##########################
