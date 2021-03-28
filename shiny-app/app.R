@@ -19,7 +19,7 @@ source("helpers.R")
 ui <- dashboardPage(
   
   dashboardHeader(
-    title = "Examining Seatle Police Department Terry Stop Data",
+    title = "Examining Seattle Police Department Terry Stop Data",
     titleWidth = 600
   ),
   
@@ -60,7 +60,7 @@ ui <- dashboardPage(
             tags$a(href = "https://en.wikipedia.org/wiki/Probable_cause",
                    "probable cause"),
             ', which is needed to make an arrest, and roughly means that an officer can stop
-            and frisk a subject whom they believeto pose a threat based on "specific and articulable facts...
+            and frisk a subject that they believe to pose a threat based on "specific and articulable facts...
             taken together with rational inferences from those facts." [1] You
             may be wondering if this is in direct conflict with our ',
             tags$a(href = "https://en.wikipedia.org/wiki/Fourth_Amendment_to_the_United_States_Constitution",
@@ -123,7 +123,7 @@ ui <- dashboardPage(
                     tags$br(),
                     tags$div('Above is a choropleth of where Seattle Police Department (SPD) conduct Terry Stops for the given year. 
                              The map is sectioned by the "beats" that SPD officers are assigned to work. Hover over a beat to see
-                             it\'s nameand total number of stops for the selected year. Click a beat to center and zoom in.')
+                             it\'s name and total number of stops for the selected year. Click a beat to center and zoom in.')
                   ),
                   
                   box(
@@ -138,7 +138,7 @@ ui <- dashboardPage(
                       highchartOutput("time_series"),
                       tags$div("Examining the frequency of Terry Stops throughout the year shows a moderate trend towards more stops
                                 being performed in the spring time when we look at the weekly sum. When we look at day to day counts
-                                we see a more stochastic nature to the data. That said the days with higher counts stil tend to be in
+                                we see a more stochastic nature to the data. That said the days with higher counts still tend to be in
                                 warmer months whereas the days with lower counts tend to be in the colder months. An interesting
                                 finding comes from the 2020 plot, which shows a clear decrease in Terry Stops starting in June right
                                 after George Floyd's death on May 25th.")
@@ -161,8 +161,8 @@ ui <- dashboardPage(
                       tags$div("Here we see how the Terry Stop was originally dispatched or initiated by the officer.
                                While there is a lot of categories here we can still easily see that the majority of stops
                                are Unknown, which may indicate an officer not wanting to disclose why they stopped a subject.
-                               Other leading categories include Suspicous Person, Prowler - Trespass, and Disturbance - Other
-                               all of which could be interpretted as vague. It seems like a substantial number of these categories
+                               Other leading categories include Suspicious Person, Prowler - Trespass, and Disturbance - Other
+                               all of which could be interpreted as vague. It seems like a substantial number of these categories
                                warrant police intervention but there are also a large proportion of possibly dubious reasons
                                to initiate a Terry Stop present.")
                     ),
@@ -211,7 +211,7 @@ ui <- dashboardPage(
                       condition = "input.plot_type == 'Time of Day'",
                       highchartOutput("time"),
                       p("In 2018 and 2019 there are clear spikes in Terry Stops at 3am and 7pm. This leads me to think that
-                        there is something like as a shift change occuring at these times. Another interesting finding to note is
+                        there is something like as a shift change occurring at these times. Another interesting finding to note is
                         the clear dip in Terry Stops around noon, during lunch time.")
                     )
                   )
