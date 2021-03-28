@@ -51,11 +51,30 @@ get_terry_years_df <- function(year) {
   # Handle missing data due to differential reporting over the years
   # Convert to proportions
   if (year == 2020) {
-    sub_beat_race$`Multi-Racial` <- "NA"
-    sub_beat_race$Hispanic <- "NA"
+    sub_beat_race$`Multi-Racial` <- NA
+    sub_beat_race$Hispanic <- NA
   } else {
-    sub_beat_race$`Nat Hawaiian/Oth Pac Islander` <- "NA"
-  } 
+    sub_beat_race$`Nat Hawaiian/Oth Pac Islander` <- NA
+  }
+  
+  # Convert to proportions
+  sub_beat_race <- sub_beat_race %>%
+    rowwise() %>% 
+    mutate(total = sum(c_across(Asian:`Nat Hawaiian/Oth Pac Islander`), na.rm = T)) %>% 
+    ungroup() %>% 
+    mutate(
+      Asian = ifelse(!is.na(Asian), paste(round(Asian / total, 3) * 100, "%", sep = ""), NA),
+      Black = ifelse(!is.na(Black), paste(round(Black / total, 3) * 100, "%", sep = ""), NA),
+      Hispanic = ifelse(!is.na(Hispanic), paste(round(Hispanic / total, 3) * 100, "%", sep = ""), NA),
+      White = ifelse(!is.na(White), paste(round(White / total, 3) * 100, "%", sep = ""), NA),
+      `American Indian/Alaska Native` = ifelse(!is.na(`American Indian/Alaska Native`), 
+                                               paste(round(`American Indian/Alaska Native` / total, 3) * 100, "%", sep = ""), NA),
+      `Multi-Racial` = ifelse(!is.na(`Multi-Racial`), 
+                              paste(round(`Multi-Racial` / total, 3) * 100, "%", sep = ""), NA),
+      Unknown = ifelse(!is.na(Unknown), paste(round(Unknown / total, 3) * 100, "%", sep = ""), NA),
+      `Nat Hawaiian/Oth Pac Islander` = ifelse(!is.na(`Nat Hawaiian/Oth Pac Islander`), 
+                                               paste(round(`Nat Hawaiian/Oth Pac Islander` / total, 3) * 100, "%", sep = ""), NA)
+    )
   
   # Combine terry stop data into the shapefile
   beats <- geo_join(beats, sub_beat_race, "beat", "Beat")
