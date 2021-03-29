@@ -53,14 +53,14 @@ get_terry_years_df <- function(year) {
   if (year == 2020) {
     sub_beat_race$`Multi-Racial` <- NA
     sub_beat_race$Hispanic <- NA
-  } else {
+  } else if (year == 2018) {
     sub_beat_race$`Nat Hawaiian/Oth Pac Islander` <- NA
   }
   
   # Convert to proportions
   sub_beat_race <- sub_beat_race %>%
     rowwise() %>% 
-    mutate(total = sum(c_across(Asian:`Nat Hawaiian/Oth Pac Islander`), na.rm = T)) %>% 
+    mutate(total = sum(rowSums(across(where(is.numeric))), na.rm = T)) %>% 
     ungroup() %>% 
     mutate(
       Asian = ifelse(!is.na(Asian), paste(round(Asian / total, 3) * 100, "%", sep = ""), NA),
