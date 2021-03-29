@@ -1,9 +1,5 @@
-# Tracking SPD Violence 2018 - Present
+# Tracking SPD's use of Terry Stops 2018 - 2020
 
-This R shiny web app is a data dashboard for exploring SPD violent encounters with the public. Three data sets were used to construct this web appoming from the [City of Seattle's Open Data Program](https://data.seattle.gov/). They are as follows: 
+This R shiny web app is a data dashboard exploring Seattle Police Department's use of [Terry Stops](https://en.wikipedia.org/wiki/Terry_stop). The data comes from the [City of Seattle's Open Data Program](https://data.seattle.gov/) and can be found [here](https://data.seattle.gov/Public-Safety/Terry-Stops/28ny-9ts8).
 
-- [Terry Stops](https://data.seattle.gov/Public-Safety/Terry-Stops/28ny-9ts8)
-- [Use of Force](https://data.seattle.gov/Public-Safety/Use-Of-Force/ppi5-g2bj)
-- [SPD Officer Involved Shooting (OIS) Data](https://data.seattle.gov/Public-Safety/SPD-Officer-Involved-Shooting-OIS-Data/mg5r-efcm)
-
-This project is still under construction and will be updated periodically.
+This project is hosted [here](https://tyler-hill-90.shinyapps.io/spd-terry-stops-18-20).
